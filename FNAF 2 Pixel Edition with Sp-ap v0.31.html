@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FNAF 2 - Pixel Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vmin;
+            max-width: 800px;
+            max-height: 600px;
+            aspect-ratio: 4/3;
+            background: #1a1a2e;
+            image-rendering: pixelated;
+        }
+        
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #mainCanvas, #staticOverlay, #jumpscareOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .ui-text {
+            position: absolute;
+            color: #fff;
+            font-size: clamp(10px, 2vmin, 16px);
+            text-shadow: 2px 2px #000;
+            pointer-events: none;
+        }
+        
+        #time { 
+            top: 1%; 
+            right: 2%; 
+            font-size: clamp(14px, 3vmin, 24px); 
+        }
+        #night { top: 6%; right: 2%; }
+        #power { top: 11%; right: 2%; }
+        #flashlightPower { top: 16%; right: 2%; color: #ff0; }
+        #musicBox { 
+            bottom: 12%; 
+            left: 2%; 
+            color: #ff0; 
+        }
+        #musicBoxBar {
+            position: absolute;
+            bottom: 8%;
+            left: 2%;
+            width: clamp(80px, 20vmin, 150px);
+            height: clamp(6px, 1.5vmin, 10px);
+            background: #333;
+            border: 2px solid #555;
+        }
+        #musicBoxFill {
+            height: 100%;
+            width: 100%;
+            background: #0f0;
+            transition: width 0.3s, background 0.3s;
+        }
+        
+        .button {
+            position: absolute;
+            background: rgba(50, 50, 80, 0.8);
+            border: 2px solid #444;
+            color: #fff;
+            padding: clamp(5px, 1.5vmin, 10px) clamp(10px, 2.5vmin, 20px);
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(10px, 1.8vmin, 14px);
+            transition: all 0.2s;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .button:hover {
+            background: rgba(80, 80, 120, 0.9);
+            border-color: #666;
+        }
+        .button:active {
+            transform: scale(0.95);
+        }
+        .button.active {
+            background: rgba(100, 100, 150, 0.9);
+            border-color: #0f0;
+            box-shadow: 0 0 10px #0f0;
+        }
+        .button.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .button.disabled:hover {
+            background: rgba(50, 50, 80, 0.8);
+            border-color: #444;
+            transform: none;
+        }
+        
+        #cameraBtn { bottom: 2%; right: 2%; }
+        #maskBtn { bottom: 2%; right: 22%; }
+        #flashlightBtn { bottom: 2%; right: 42%; }
+        #hideBtn { 
+            bottom: 2%; 
+            right: 62%; 
+            background: rgba(80, 50, 50, 0.8);
+            border-color: #a00;
+            display: none;
+        }
+        #hideBtn:hover {
+            background: rgba(120, 70, 70, 0.9);
+        }
+        #hideBtn.active {
+            background: rgba(50, 50, 50, 0.9);
+            border-color: #888;
+        }
+        #windMusicBox { 
+            bottom: 16%; 
+            left: 2%; 
+            background: rgba(100, 50, 50, 0.8);
+            border-color: #f00;
+            display: none;
+        }
+        #windMusicBox:hover {
+            background: rgba(150, 80, 80, 0.9);
+            border-color: #ff0;
+        }
+        #windMusicBox.winding {
+            background: rgba(50, 150, 50, 0.9);
+            border-color: #0f0;
+        }
+        
+        #cameraPanel {
+            position: absolute;
+            bottom: 12%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            flex-wrap: wrap;
+            gap: clamp(2px, 0.5vmin, 5px);
+            max-width: 90%;
+            justify-content: center;
+            padding: 5px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 5px;
+        }
+        .cam-btn {
+            background: rgba(30, 30, 50, 0.9);
+            border: 2px solid #333;
+            color: #0f0;
+            padding: clamp(3px, 0.8vmin, 5px) clamp(5px, 1.2vmin, 10px);
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(8px, 1.5vmin, 12px);
+        }
+        .cam-btn:hover, .cam-btn.active {
+            background: rgba(50, 80, 50, 0.9);
+            border-color: #0f0;
+        }
+        .cam-btn.prize-corner {
+            border-color: #ff0;
+            color: #ff0;
+        }
+        .cam-btn.prize-corner.active {
+            background: rgba(80, 80, 50, 0.9);
+            box-shadow: 0 0 10px #ff0;
+        }
+        
+        #menu, #gameOver, #nightComplete {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            z-index: 100;
+            padding: 10px;
+        }
+        #gameOver { display: none; background: rgba(80, 0, 0, 0.95); }
+        #nightComplete { display: none; background: rgba(0, 50, 0, 0.95); }
+        
+        .title {
+            font-size: clamp(24px, 6vmin, 48px);
+            color: #f00;
+            text-shadow: 4px 4px #000, 0 0 20px #f00;
+            margin-bottom: clamp(15px, 4vmin, 30px);
+            text-align: center;
+        }
+        
+        .menu-btn {
+            background: #333;
+            border: 3px solid #f00;
+            color: #fff;
+            padding: clamp(8px, 2vmin, 15px) clamp(20px, 5vmin, 40px);
+            margin: clamp(5px, 1vmin, 10px);
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(12px, 2.5vmin, 20px);
+            transition: all 0.3s;
+        }
+        .menu-btn:hover {
+            background: #500;
+            transform: scale(1.05);
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        #instructions {
+            position: absolute;
+            top: 1%;
+            left: 1%;
+            color: #888;
+            font-size: clamp(8px, 1.2vmin, 10px);
+            pointer-events: none;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .shake {
+            animation: shake 0.1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .warning {
+            animation: pulse 0.5s infinite;
+        }
+        
+        @media (max-width: 600px) {
+            #gameContainer {
+                width: 100vw;
+                height: 75vw;
+                max-height: 100vh;
+            }
+            
+            .button {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+            
+            #cameraBtn { bottom: 1%; right: 1%; }
+            #maskBtn { bottom: 1%; right: 26%; }
+            #flashlightBtn { bottom: 1%; right: 51%; }
+            #hideBtn { bottom: 1%; right: 76%; }
+            
+            .cam-btn {
+                padding: 4px 6px;
+                font-size: 9px;
+            }
+            
+            #cameraPanel {
+                bottom: 10%;
+            }
+        }
+        
+        @media (max-height: 500px) {
+            #gameContainer {
+                height: 100vh;
+                width: 133vh;
+            }
+        }
+        
+        @media (max-height: 450px) and (orientation: landscape) {
+            .button {
+                padding: 5px 10px;
+                font-size: 10px;
+            }
+            
+            #cameraPanel {
+                bottom: 15%;
+                max-width: 80%;
+            }
+            
+            .cam-btn {
+                padding: 3px 5px;
+                font-size: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="mainCanvas" width="800" height="600"></canvas>
+        <canvas id="staticOverlay" width="800" height="600"></canvas>
+        <canvas id="jumpscareOverlay" width="800" height="600"></canvas>
+        
+        <div id="instructions">C-Камера M-Маска F-Фонарик Space-Шкатулка H-Прятаться</div>
+        
+        <div id="time" class="ui-text">12 AM</div>
+        <div id="night" class="ui-text">Night 1</div>
+        <div id="power" class="ui-text">Battery: 100%</div>
+        <div id="flashlightPower" class="ui-text">Flashlight: 100%</div>
+        <div id="musicBox" class="ui-text">🎵 Music Box</div>
+        <div id="musicBoxBar"><div id="musicBoxFill"></div></div>
+        
+        <button id="cameraBtn" class="button">📹 CAM</button>
+        <button id="maskBtn" class="button">🎭 MASK</button>
+        <button id="flashlightBtn" class="button">🔦 LIGHT</button>
+        <button id="hideBtn" class="button">🪑 HIDE</button>
+        <button id="windMusicBox" class="button">🎵 WIND</button>
+        
+        <div id="cameraPanel">
+            <button class="cam-btn" data-cam="CAM01">CAM01</button>
+            <button class="cam-btn" data-cam="CAM02">CAM02</button>
+            <button class="cam-btn" data-cam="CAM03">CAM03</button>
+            <button class="cam-btn" data-cam="CAM04">CAM04</button>
+            <button class="cam-btn" data-cam="CAM05">CAM05</button>
+            <button class="cam-btn" data-cam="CAM06">CAM06</button>
+            <button class="cam-btn" data-cam="CAM07">CAM07</button>
+            <button class="cam-btn" data-cam="CAM08">CAM08</button>
+            <button class="cam-btn" data-cam="CAM09">CAM09</button>
+            <button class="cam-btn" data-cam="CAM10">CAM10</button>
+            <button class="cam-btn prize-corner" data-cam="CAM11">🎁 PRIZE</button>
+            <button class="cam-btn" data-cam="VENT_L">VENT-L</button>
+            <button class="cam-btn" data-cam="VENT_R">VENT-R</button>
+        </div>
+        
+        <div id="menu">
+            <div class="title">FIVE NIGHTS AT FREDDY'S 2</div>
+            <div style="color: #888; margin-bottom: 15px; font-size: clamp(10px, 2vmin, 14px);">PIXEL EDITION</div>
+            <div class="menu-grid">
+                <button class="menu-btn" onclick="startNight(1)">Night 1</button>
+                <button class="menu-btn" onclick="startNight(2)">Night 2</button>
+                <button class="menu-btn" onclick="startNight(3)">Night 3</button>
+                <button class="menu-btn" onclick="startNight(4)">Night 4</button>
+                <button class="menu-btn" onclick="startNight(5)">Night 5</button>
+                <button class="menu-btn" onclick="startNight(6)" style="border-color: #0f0; color: #0f0;">Night 6</button>
+            </div>
+            <div style="color: #666; margin-top: 20px; font-size: clamp(8px, 1.5vmin, 12px); text-align: center;">
+                C-Camera M-Mask F-Flashlight Space-Wind H-Hide (Night 6)
+            </div>
+        </div>
+        
+        <div id="gameOver">
+            <div class="title">GAME OVER</div>
+            <button class="menu-btn" onclick="returnToMenu()">Return to Menu</button>
+        </div>
+        
+        <div id="nightComplete">
+            <div class="title" style="color: #0f0;">NIGHT COMPLETE!</div>
+            <div style="font-size: clamp(24px, 6vmin, 48px); margin: 20px;">6:00 AM</div>
+            <div id="completedNightText" style="font-size: clamp(14px, 3vmin, 24px); margin: 20px; color: #888;"></div>
+            <button class="menu-btn" onclick="returnToMenu()">Continue</button>
+        </div>
+    </div>
+
+    <script>
+        // ============ CANVAS SETUP ============
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const staticCanvas = document.getElementById('staticOverlay');
+        const staticCtx = staticCanvas.getContext('2d');
+        const jumpscareCanvas = document.getElementById('jumpscareOverlay');
+        const jumpscareCtx = jumpscareCanvas.getContext('2d');
+        
+        // ============ AUDIO SYSTEM ============
+        let audioContext = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioContext;
+        }
+
+        function playButtonSound() {
+            const ctx = initAudio();
+            if (!ctx) return;
+            
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            
+            oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            
+            oscillator.start(ctx.currentTime);
+            oscillator.stop(ctx.currentTime + 0.1);
+        }
+
+        function playJumpscareSound() {
+            const ctx = initAudio();
+            if (!ctx) return;
+            
+            const duration = 1.5;
+            
+            for (let i = 0; i < 5; i++) {
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                const baseFreq = 150 + i * 80;
+                oscillator.type = i % 2 === 0 ? 'sawtooth' : 'square';
+                oscillator.frequency.setValueAtTime(baseFreq, ctx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(baseFreq * 0.5, ctx.currentTime + duration);
+                
+                gainNode.gain.setValueAtTime(0.4 / (i + 1), ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+                
+                oscillator.start(ctx.currentTime + i * 0.02);
+                oscillator.stop(ctx.currentTime + duration);
+            }
+            
+            const bufferSize = ctx.sampleRate * duration;
+            const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const noiseData = noiseBuffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                noiseData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+            }
+            
+            const noiseSource = ctx.createBufferSource();
+            noiseSource.buffer = noiseBuffer;
+            
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.5, ctx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+            
+            noiseSource.connect(noiseGain);
+            noiseGain.connect(ctx.destination);
+            noiseSource.start(ctx.currentTime);
+            
+            const kick = ctx.createOscillator();
+            const kickGain = ctx.createGain();
+            
+            kick.connect(kickGain);
+            kickGain.connect(ctx.destination);
+            
+            kick.type = 'sine';
+            kick.frequency.setValueAtTime(150, ctx.currentTime);
+            kick.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.3);
+            
+            kickGain.gain.setValueAtTime(0.8, ctx.currentTime);
+            kickGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+            
+            kick.start(ctx.currentTime);
+            kick.stop(ctx.currentTime + 0.5);
+        }
+        
+        // ============ PIXEL ART COLORS ============
+        const COLORS = {
+            brown: '#8B4513',
+            darkBrown: '#5D3A1A',
+            blue: '#4169E1',
+            darkBlue: '#2E4A8F',
+            yellow: '#FFD700',
+            pink: '#FF69B4',
+            white: '#FFFFFF',
+            black: '#000000',
+            red: '#FF0000',
+            orange: '#FFA500',
+            purple: '#800080',
+            gray: '#808080',
+            darkGray: '#404040',
+            gold: '#DAA520',
+            green: '#00FF00',
+            darkGreen: '#006400',
+            cyan: '#00FFFF',
+            olive: '#556B2F'
+        };
+        
+        function drawPixelRect(context, x, y, w, h, color) {
+            context.fillStyle = color;
+            context.fillRect(Math.floor(x), Math.floor(y), w, h);
+        }
+        
+        // ============ JUMPSCARE SPRITES ============
+        const JumpscareSprites = {
+            toyFreddy: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 60*s, y - 80*s, 120*s, 100*s, COLORS.brown);
+                drawPixelRect(ctx, x - 70*s, y - 100*s, 25*s, 30*s, COLORS.brown);
+                drawPixelRect(ctx, x + 45*s, y - 100*s, 25*s, 30*s, COLORS.brown);
+                drawPixelRect(ctx, x - 40*s, y - 50*s, 30*s, 25*s, COLORS.white);
+                drawPixelRect(ctx, x + 10*s, y - 50*s, 30*s, 25*s, COLORS.white);
+                drawPixelRect(ctx, x - 30*s, y - 45*s, 15*s, 15*s, COLORS.blue);
+                drawPixelRect(ctx, x + 15*s, y - 45*s, 15*s, 15*s, COLORS.blue);
+                ctx.fillStyle = COLORS.black;
+                ctx.fillRect(x - 45*s, y - 60*s, 35*s, 8*s);
+                ctx.fillRect(x + 10*s, y - 60*s, 35*s, 8*s);
+                drawPixelRect(ctx, x - 12*s, y - 20*s, 24*s, 18*s, COLORS.black);
+                drawPixelRect(ctx, x - 35*s, y + 5*s, 70*s, 30*s, COLORS.black);
+                for (let i = 0; i < 6; i++) {
+                    drawPixelRect(ctx, x - 30*s + i*12*s, y + 8*s, 8*s, 15*s, COLORS.white);
+                }
+                drawPixelRect(ctx, x - 50*s, y - 95*s, 100*s, 15*s, COLORS.black);
+                drawPixelRect(ctx, x - 35*s, y - 130*s, 70*s, 35*s, COLORS.black);
+            },
+            
+            toyBonnie: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 55*s, y - 70*s, 110*s, 90*s, COLORS.blue);
+                drawPixelRect(ctx, x - 45*s, y - 150*s, 25*s, 80*s, COLORS.blue);
+                drawPixelRect(ctx, x + 20*s, y - 150*s, 25*s, 80*s, COLORS.blue);
+                drawPixelRect(ctx, x - 40*s, y - 140*s, 15*s, 60*s, COLORS.pink);
+                drawPixelRect(ctx, x + 25*s, y - 140*s, 15*s, 60*s, COLORS.pink);
+                drawPixelRect(ctx, x - 40*s, y - 45*s, 30*s, 30*s, COLORS.white);
+                drawPixelRect(ctx, x + 10*s, y - 45*s, 30*s, 30*s, COLORS.white);
+                drawPixelRect(ctx, x - 32*s, y - 40*s, 15*s, 20*s, COLORS.green);
+                drawPixelRect(ctx, x + 17*s, y - 40*s, 15*s, 20*s, COLORS.green);
+                drawPixelRect(ctx, x - 10*s, y - 10*s, 20*s, 12*s, COLORS.pink);
+                drawPixelRect(ctx, x - 30*s, y + 10*s, 60*s, 25*s, COLORS.black);
+                for (let i = 0; i < 5; i++) {
+                    drawPixelRect(ctx, x - 25*s + i*12*s, y + 12*s, 8*s, 12*s, COLORS.white);
+                }
+                drawPixelRect(ctx, x - 20*s, y + 40*s, 40*s, 20*s, COLORS.red);
+            },
+            
+            toyChica: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 55*s, y - 65*s, 110*s, 85*s, COLORS.yellow);
+                drawPixelRect(ctx, x - 40*s, y - 45*s, 30*s, 30*s, COLORS.white);
+                drawPixelRect(ctx, x + 10*s, y - 45*s, 30*s, 30*s, COLORS.white);
+                drawPixelRect(ctx, x - 32*s, y - 40*s, 15*s, 20*s, COLORS.purple);
+                drawPixelRect(ctx, x + 18*s, y - 40*s, 15*s, 20*s, COLORS.purple);
+                for (let i = 0; i < 3; i++) {
+                    drawPixelRect(ctx, x - 38*s + i*10*s, y - 55*s, 3*s, 10*s, COLORS.black);
+                    drawPixelRect(ctx, x + 12*s + i*10*s, y - 55*s, 3*s, 10*s, COLORS.black);
+                }
+                drawPixelRect(ctx, x - 25*s, y - 10*s, 50*s, 35*s, COLORS.orange);
+                drawPixelRect(ctx, x - 20*s, y + 5*s, 40*s, 15*s, COLORS.black);
+            },
+            
+            mangle: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 50*s, y - 60*s, 80*s, 60*s, COLORS.white);
+                drawPixelRect(ctx, x + 30*s, y - 80*s, 50*s, 50*s, COLORS.gray);
+                drawPixelRect(ctx, x - 35*s, y - 45*s, 25*s, 25*s, COLORS.yellow);
+                drawPixelRect(ctx, x + 5*s, y - 45*s, 25*s, 25*s, COLORS.yellow);
+                drawPixelRect(ctx, x - 28*s, y - 38*s, 10*s, 10*s, COLORS.black);
+                drawPixelRect(ctx, x + 12*s, y - 38*s, 10*s, 10*s, COLORS.black);
+                drawPixelRect(ctx, x + 40*s, y - 65*s, 15*s, 15*s, COLORS.red);
+                drawPixelRect(ctx, x + 60*s, y - 65*s, 15*s, 15*s, COLORS.red);
+                drawPixelRect(ctx, x - 25*s, y - 15*s, 50*s, 25*s, COLORS.white);
+                for (let i = 0; i < 7; i++) {
+                    drawPixelRect(ctx, x - 20*s + i*7*s, y - 5*s, 5*s, 15*s, COLORS.white);
+                }
+                drawPixelRect(ctx, x - 40*s, y - 70*s, 20*s, 12*s, COLORS.pink);
+            },
+            
+            balloonBoy: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 50*s, y - 60*s, 100*s, 80*s, '#FFE4C4');
+                drawPixelRect(ctx, x - 35*s, y - 40*s, 28*s, 28*s, COLORS.white);
+                drawPixelRect(ctx, x + 7*s, y - 40*s, 28*s, 28*s, COLORS.white);
+                drawPixelRect(ctx, x - 25*s, y - 32*s, 12*s, 12*s, COLORS.blue);
+                drawPixelRect(ctx, x + 17*s, y - 32*s, 12*s, 12*s, COLORS.blue);
+                drawPixelRect(ctx, x - 45*s, y - 15*s, 18*s, 15*s, COLORS.pink);
+                drawPixelRect(ctx, x + 27*s, y - 15*s, 18*s, 15*s, COLORS.pink);
+                drawPixelRect(ctx, x - 35*s, y + 5*s, 70*s, 20*s, COLORS.red);
+                for (let i = 0; i < 6; i++) {
+                    drawPixelRect(ctx, x - 30*s + i*11*s, y + 7*s, 8*s, 10*s, COLORS.white);
+                }
+                drawPixelRect(ctx, x - 40*s, y - 75*s, 80*s, 18*s, COLORS.red);
+                drawPixelRect(ctx, x - 25*s, y - 105*s, 50*s, 30*s, COLORS.red);
+            },
+            
+            puppet: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 50*s, y - 80*s, 100*s, 110*s, COLORS.white);
+                drawPixelRect(ctx, x - 35*s, y - 55*s, 25*s, 35*s, COLORS.black);
+                drawPixelRect(ctx, x + 10*s, y - 55*s, 25*s, 35*s, COLORS.black);
+                drawPixelRect(ctx, x - 25*s, y - 42*s, 5*s, 8*s, COLORS.white);
+                drawPixelRect(ctx, x + 20*s, y - 42*s, 5*s, 8*s, COLORS.white);
+                drawPixelRect(ctx, x - 35*s, y - 20*s, 8*s, 40*s, COLORS.purple);
+                drawPixelRect(ctx, x + 27*s, y - 20*s, 8*s, 40*s, COLORS.purple);
+                drawPixelRect(ctx, x - 45*s, y - 10*s, 15*s, 15*s, COLORS.red);
+                drawPixelRect(ctx, x + 30*s, y - 10*s, 15*s, 15*s, COLORS.red);
+                drawPixelRect(ctx, x - 30*s, y + 10*s, 60*s, 8*s, COLORS.red);
+            },
+            
+            witheredFreddy: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 65*s, y - 85*s, 130*s, 110*s, COLORS.darkBrown);
+                drawPixelRect(ctx, x + 35*s, y - 70*s, 20*s, 25*s, COLORS.darkGray);
+                drawPixelRect(ctx, x - 55*s, y - 30*s, 15*s, 20*s, COLORS.darkGray);
+                drawPixelRect(ctx, x - 45*s, y - 55*s, 32*s, 28*s, COLORS.white);
+                drawPixelRect(ctx, x + 13*s, y - 55*s, 32*s, 28*s, COLORS.white);
+                drawPixelRect(ctx, x - 35*s, y - 48*s, 15*s, 15*s, COLORS.blue);
+                drawPixelRect(ctx, x + 20*s, y - 48*s, 15*s, 15*s, COLORS.blue);
+                drawPixelRect(ctx, x - 15*s, y - 20*s, 30*s, 22*s, COLORS.black);
+                drawPixelRect(ctx, x - 40*s, y + 10*s, 80*s, 30*s, COLORS.black);
+                for (let i = 0; i < 7; i++) {
+                    drawPixelRect(ctx, x - 35*s + i*11*s, y + 12*s, 8*s, 18*s, COLORS.white);
+                }
+                drawPixelRect(ctx, x - 55*s, y - 100*s, 110*s, 18*s, COLORS.black);
+                drawPixelRect(ctx, x - 40*s, y - 140*s, 80*s, 40*s, COLORS.black);
+            },
+            
+            witheredBonnie: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 55*s, y - 75*s, 110*s, 100*s, COLORS.darkGray);
+                drawPixelRect(ctx, x - 60*s, y - 80*s, 25*s, 30*s, COLORS.darkBlue);
+                drawPixelRect(ctx, x + 35*s, y - 80*s, 25*s, 30*s, COLORS.darkBlue);
+                drawPixelRect(ctx, x - 50*s, y - 160*s, 28*s, 85*s, COLORS.darkBlue);
+                drawPixelRect(ctx, x + 22*s, y - 160*s, 28*s, 85*s, COLORS.darkBlue);
+                drawPixelRect(ctx, x - 35*s, y - 45*s, 25*s, 25*s, COLORS.red);
+                drawPixelRect(ctx, x + 10*s, y - 45*s, 25*s, 25*s, COLORS.red);
+                drawPixelRect(ctx, x - 30*s, y + 5*s, 60*s, 25*s, COLORS.darkGray);
+                for (let i = 0; i < 8; i++) {
+                    drawPixelRect(ctx, x - 28*s + i*8*s, y + 8*s, 5*s, 15*s, COLORS.gray);
+                }
+            },
+            
+            witheredChica: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 60*s, y - 75*s, 120*s, 100*s, '#DAA520');
+                drawPixelRect(ctx, x - 42*s, y - 50*s, 30*s, 30*s, COLORS.white);
+                drawPixelRect(ctx, x + 12*s, y - 50*s, 30*s, 30*s, COLORS.white);
+                drawPixelRect(ctx, x - 33*s, y - 42*s, 15*s, 15*s, COLORS.purple);
+                drawPixelRect(ctx, x + 18*s, y - 42*s, 15*s, 15*s, COLORS.purple);
+                drawPixelRect(ctx, x - 30*s, y - 15*s, 60*s, 30*s, COLORS.orange);
+                drawPixelRect(ctx, x - 35*s, y + 25*s, 70*s, 35*s, COLORS.orange);
+                drawPixelRect(ctx, x - 25*s, y + 10*s, 50*s, 20*s, COLORS.darkGray);
+                for (let i = 0; i < 6; i++) {
+                    drawPixelRect(ctx, x - 22*s + i*9*s, y + 12*s, 6*s, 12*s, COLORS.gray);
+                }
+            },
+            
+            witheredFoxy: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 55*s, y - 70*s, 110*s, 90*s, '#8B0000');
+                drawPixelRect(ctx, x - 25*s, y - 30*s, 70*s, 45*s, '#8B0000');
+                drawPixelRect(ctx, x - 40*s, y - 55*s, 28*s, 25*s, COLORS.yellow);
+                drawPixelRect(ctx, x - 32*s, y - 48*s, 12*s, 12*s, COLORS.black);
+                drawPixelRect(ctx, x + 10*s, y - 55*s, 28*s, 25*s, COLORS.black);
+                drawPixelRect(ctx, x - 55*s, y - 100*s, 25*s, 35*s, '#8B0000');
+                drawPixelRect(ctx, x + 30*s, y - 100*s, 25*s, 35*s, '#8B0000');
+                drawPixelRect(ctx, x - 20*s, y + 5*s, 60*s, 25*s, COLORS.black);
+                for (let i = 0; i < 8; i++) {
+                    const toothHeight = (i % 2 === 0) ? 20 : 15;
+                    drawPixelRect(ctx, x - 18*s + i*8*s, y + 7*s, 5*s, toothHeight*s, COLORS.white);
+                }
+                drawPixelRect(ctx, x - 50*s, y - 40*s, 12*s, 15*s, COLORS.darkGray);
+            },
+            
+            springtrap: function(ctx, x, y, scale) {
+                const s = scale;
+                drawPixelRect(ctx, x - 60*s, y - 85*s, 120*s, 110*s, COLORS.olive);
+                drawPixelRect(ctx, x + 25*s, y - 70*s, 25*s, 30*s, COLORS.darkGray);
+                drawPixelRect(ctx, x + 30*s, y - 65*s, 15*s, 20*s, COLORS.purple);
+                drawPixelRect(ctx, x - 50*s, y - 40*s, 18*s, 22*s, COLORS.darkGray);
+                drawPixelRect(ctx, x - 55*s, y - 170*s, 30*s, 90*s, COLORS.olive);
+                drawPixelRect(ctx, x + 25*s, y - 170*s, 30*s, 90*s, COLORS.olive);
+                drawPixelRect(ctx, x - 48*s, y - 150*s, 15*s, 25*s, COLORS.darkGray);
+                drawPixelRect(ctx, x + 32*s, y - 140*s, 15*s, 20*s, COLORS.darkGray);
+                drawPixelRect(ctx, x - 40*s, y - 55*s, 28*s, 28*s, COLORS.gray);
+                drawPixelRect(ctx, x + 12*s, y - 55*s, 28*s, 28*s, COLORS.gray);
+                drawPixelRect(ctx, x - 30*s, y - 45*s, 10*s, 10*s, COLORS.white);
+                drawPixelRect(ctx, x + 20*s, y - 45*s, 10*s, 10*s, COLORS.white);
+                drawPixelRect(ctx, x - 35*s, y - 5*s, 70*s, 35*s, COLORS.darkGray);
+                for (let i = 0; i < 8; i++) {
+                    const h = 12 + Math.random() * 10;
+                    drawPixelRect(ctx, x - 32*s + i*9*s, y - 2*s, 6*s, h*s, '#FFFFF0');
+                }
+                drawPixelRect(ctx, x - 20*s, y + 35*s, 40*s, 25*s, COLORS.purple);
+            }
+        };
+        
+        // ============ REGULAR SPRITES ============
+        const Sprites = {
+            toyFreddy: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 15*s, y - 10*s, 30*s, 40*s, COLORS.brown);
+                drawPixelRect(ctx, x - 20*s, y - 40*s, 40*s, 35*s, COLORS.brown);
+                drawPixelRect(ctx, x - 12*s, y - 30*s, 8*s, 8*s, COLORS.white);
+                drawPixelRect(ctx, x + 4*s, y - 30*s, 8*s, 8*s, COLORS.white);
+                drawPixelRect(ctx, x - 10*s, y - 28*s, 4*s, 4*s, COLORS.blue);
+                drawPixelRect(ctx, x + 6*s, y - 28*s, 4*s, 4*s, COLORS.blue);
+                drawPixelRect(ctx, x - 4*s, y - 20*s, 8*s, 6*s, COLORS.black);
+                drawPixelRect(ctx, x - 15*s, y - 50*s, 30*s, 5*s, COLORS.black);
+                drawPixelRect(ctx, x - 10*s, y - 65*s, 20*s, 15*s, COLORS.black);
+                drawPixelRect(ctx, x - 8*s, y - 5*s, 16*s, 8*s, COLORS.black);
+                drawPixelRect(ctx, x - 25*s, y - 45*s, 10*s, 10*s, COLORS.brown);
+                drawPixelRect(ctx, x + 15*s, y - 45*s, 10*s, 10*s, COLORS.brown);
+            },
+            
+            toyBonnie: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 15*s, y - 10*s, 30*s, 40*s, COLORS.blue);
+                drawPixelRect(ctx, x - 18*s, y - 40*s, 36*s, 32*s, COLORS.blue);
+                drawPixelRect(ctx, x - 15*s, y - 70*s, 10*s, 30*s, COLORS.blue);
+                drawPixelRect(ctx, x + 5*s, y - 70*s, 10*s, 30*s, COLORS.blue);
+                drawPixelRect(ctx, x - 12*s, y - 32*s, 10*s, 10*s, COLORS.white);
+                drawPixelRect(ctx, x + 2*s, y - 32*s, 10*s, 10*s, COLORS.white);
+                drawPixelRect(ctx, x - 9*s, y - 29*s, 4*s, 4*s, COLORS.green);
+                drawPixelRect(ctx, x + 5*s, y - 29*s, 4*s, 4*s, COLORS.green);
+                drawPixelRect(ctx, x - 4*s, y - 20*s, 8*s, 5*s, COLORS.pink);
+                drawPixelRect(ctx, x - 8*s, y - 5*s, 16*s, 8*s, COLORS.red);
+            },
+            
+            toyChica: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 15*s, y - 10*s, 30*s, 40*s, COLORS.yellow);
+                drawPixelRect(ctx, x - 18*s, y - 38*s, 36*s, 30*s, COLORS.yellow);
+                drawPixelRect(ctx, x - 12*s, y - 32*s, 10*s, 10*s, COLORS.white);
+                drawPixelRect(ctx, x + 2*s, y - 32*s, 10*s, 10*s, COLORS.white);
+                drawPixelRect(ctx, x - 9*s, y - 29*s, 4*s, 4*s, COLORS.purple);
+                drawPixelRect(ctx, x + 5*s, y - 29*s, 4*s, 4*s, COLORS.purple);
+                drawPixelRect(ctx, x - 6*s, y - 20*s, 12*s, 8*s, COLORS.orange);
+                drawPixelRect(ctx, x - 12*s, y - 8*s, 24*s, 20*s, COLORS.white);
+            },
+            
+            mangle: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 20*s, y - 30*s, 15*s, 15*s, COLORS.white);
+                drawPixelRect(ctx, x + 5*s, y - 25*s, 15*s, 12*s, COLORS.white);
+                drawPixelRect(ctx, x - 10*s, y - 10*s, 20*s, 15*s, COLORS.white);
+                drawPixelRect(ctx, x - 15*s, y - 45*s, 25*s, 20*s, COLORS.white);
+                drawPixelRect(ctx, x + 10*s, y - 50*s, 15*s, 15*s, COLORS.gray);
+                drawPixelRect(ctx, x - 10*s, y - 40*s, 6*s, 6*s, COLORS.yellow);
+                drawPixelRect(ctx, x, y - 40*s, 6*s, 6*s, COLORS.yellow);
+                drawPixelRect(ctx, x - 10*s, y - 48*s, 8*s, 5*s, COLORS.pink);
+            },
+            
+            balloonBoy: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 12*s, y - 5*s, 24*s, 30*s, COLORS.blue);
+                drawPixelRect(ctx, x - 12*s, y + 5*s, 24*s, 15*s, COLORS.red);
+                drawPixelRect(ctx, x - 15*s, y - 30*s, 30*s, 28*s, '#FFE4C4');
+                drawPixelRect(ctx, x - 10*s, y - 22*s, 8*s, 8*s, COLORS.white);
+                drawPixelRect(ctx, x + 2*s, y - 22*s, 8*s, 8*s, COLORS.white);
+                drawPixelRect(ctx, x - 8*s, y - 10*s, 16*s, 4*s, COLORS.red);
+                drawPixelRect(ctx, x - 12*s, y - 35*s, 24*s, 6*s, COLORS.red);
+            },
+            
+            puppet: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 8*s, y - 20*s, 16*s, 50*s, COLORS.black);
+                drawPixelRect(ctx, x - 15*s, y - 50*s, 30*s, 32*s, COLORS.white);
+                drawPixelRect(ctx, x - 10*s, y - 42*s, 8*s, 10*s, COLORS.black);
+                drawPixelRect(ctx, x + 2*s, y - 42*s, 8*s, 10*s, COLORS.black);
+                drawPixelRect(ctx, x - 10*s, y - 32*s, 3*s, 12*s, COLORS.purple);
+                drawPixelRect(ctx, x + 7*s, y - 32*s, 3*s, 12*s, COLORS.purple);
+                drawPixelRect(ctx, x - 14*s, y - 30*s, 5*s, 5*s, COLORS.red);
+                drawPixelRect(ctx, x + 9*s, y - 30*s, 5*s, 5*s, COLORS.red);
+                drawPixelRect(ctx, x - 8*s, y - 25*s, 16*s, 3*s, COLORS.red);
+            },
+            
+            witheredFreddy: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 18*s, y - 12*s, 36*s, 45*s, COLORS.darkBrown);
+                drawPixelRect(ctx, x - 10*s, y, 8*s, 8*s, COLORS.darkGray);
+                drawPixelRect(ctx, x - 22*s, y - 45*s, 44*s, 38*s, COLORS.darkBrown);
+                drawPixelRect(ctx, x - 14*s, y - 35*s, 10*s, 10*s, COLORS.white);
+                drawPixelRect(ctx, x + 4*s, y - 35*s, 10*s, 10*s, COLORS.white);
+                drawPixelRect(ctx, x - 5*s, y - 22*s, 10*s, 7*s, COLORS.black);
+                drawPixelRect(ctx, x - 18*s, y - 55*s, 36*s, 6*s, COLORS.black);
+            },
+            
+            witheredBonnie: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 16*s, y - 10*s, 32*s, 42*s, COLORS.darkBlue);
+                drawPixelRect(ctx, x - 18*s, y - 42*s, 36*s, 35*s, COLORS.darkGray);
+                drawPixelRect(ctx, x - 10*s, y - 32*s, 6*s, 6*s, COLORS.red);
+                drawPixelRect(ctx, x + 4*s, y - 32*s, 6*s, 6*s, COLORS.red);
+                drawPixelRect(ctx, x - 16*s, y - 75*s, 12*s, 35*s, COLORS.darkBlue);
+                drawPixelRect(ctx, x + 4*s, y - 75*s, 12*s, 35*s, COLORS.darkBlue);
+            },
+            
+            witheredChica: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 18*s, y - 10*s, 36*s, 42*s, '#DAA520');
+                drawPixelRect(ctx, x - 20*s, y - 42*s, 40*s, 35*s, '#DAA520');
+                drawPixelRect(ctx, x - 12*s, y - 34*s, 10*s, 10*s, COLORS.white);
+                drawPixelRect(ctx, x + 2*s, y - 34*s, 10*s, 10*s, COLORS.white);
+                drawPixelRect(ctx, x - 10*s, y - 22*s, 20*s, 15*s, COLORS.orange);
+            },
+            
+            witheredFoxy: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 15*s, y - 10*s, 30*s, 40*s, '#8B0000');
+                drawPixelRect(ctx, x - 8*s, y + 5*s, 10*s, 10*s, COLORS.darkGray);
+                drawPixelRect(ctx, x - 18*s, y - 40*s, 36*s, 32*s, '#8B0000');
+                drawPixelRect(ctx, x - 8*s, y - 28*s, 25*s, 15*s, '#8B0000');
+                drawPixelRect(ctx, x - 12*s, y - 35*s, 8*s, 8*s, COLORS.yellow);
+                drawPixelRect(ctx, x + 4*s, y - 35*s, 8*s, 8*s, COLORS.black);
+                for (let i = 0; i < 5; i++) {
+                    drawPixelRect(ctx, x - 4*s + i*4*s, y - 18*s, 3*s, 6*s, COLORS.white);
+                }
+            },
+            
+            springtrap: function(x, y, scale = 1) {
+                const s = scale * 4;
+                drawPixelRect(ctx, x - 16*s, y - 10*s, 32*s, 45*s, COLORS.olive);
+                drawPixelRect(ctx, x - 8*s, y, 6*s, 15*s, '#8B4513');
+                drawPixelRect(ctx, x - 20*s, y - 45*s, 40*s, 38*s, COLORS.olive);
+                drawPixelRect(ctx, x - 18*s, y - 80*s, 12*s, 38*s, COLORS.olive);
+                drawPixelRect(ctx, x + 6*s, y - 80*s, 12*s, 38*s, COLORS.olive);
+                drawPixelRect(ctx, x - 12*s, y - 35*s, 8*s, 10*s, COLORS.gray);
+                drawPixelRect(ctx, x + 4*s, y - 35*s, 8*s, 10*s, COLORS.gray);
+                for (let i = 0; i < 6; i++) {
+                    drawPixelRect(ctx, x - 10*s + i*4*s, y - 18*s, 3*s, 8*s, '#FFFFF0');
+                }
+                drawPixelRect(ctx, x - 5*s, y + 15*s, 10*s, 10*s, COLORS.purple);
+            },
+            
+            office: function() {
+                ctx.fillStyle = '#2a2a3a';
+                ctx.fillRect(0, 400, 800, 200);
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, 800, 400);
+                ctx.fillStyle = '#3d3d5c';
+                ctx.fillRect(100, 350, 600, 100);
+                ctx.fillStyle = '#111';
+                ctx.fillRect(350, 280, 100, 80);
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(355, 285, 90, 70);
+                ctx.fillStyle = '#222';
+                ctx.fillRect(0, 200, 80, 100);
+                ctx.fillRect(720, 200, 80, 100);
+                ctx.fillStyle = '#333';
+                for (let i = 0; i < 5; i++) {
+                    ctx.fillRect(5, 210 + i*18, 70, 8);
+                    ctx.fillRect(725, 210 + i*18, 70, 8);
+                }
+                ctx.fillStyle = '#0f0f1a';
+                ctx.fillRect(300, 100, 200, 180);
+                ctx.fillStyle = '#333';
+                ctx.fillRect(295, 95, 10, 190);
+                ctx.fillRect(495, 95, 10, 190);
+                ctx.fillRect(295, 95, 210, 10);
+                ctx.fillStyle = '#444';
+                ctx.fillRect(50, 120, 60, 80);
+                ctx.fillRect(690, 120, 60, 80);
+            },
+            
+            cameraRoom: function(camId, animatronics) {
+                ctx.fillStyle = '#0a0a15';
+                ctx.fillRect(0, 0, 800, 600);
+                
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+                for (let i = 0; i < 100; i++) {
+                    ctx.fillRect(Math.random() * 800, Math.random() * 600, Math.random() * 10, 2);
+                }
+                
+                ctx.fillStyle = '#1a1a2e';
+                
+                switch(camId) {
+                    case 'CAM01':
+                        ctx.fillRect(100, 350, 600, 150);
+                        ctx.fillStyle = '#2a2a4a';
+                        ctx.fillRect(150, 300, 500, 60);
+                        ctx.fillStyle = '#800020';
+                        ctx.fillRect(80, 100, 60, 300);
+                        ctx.fillRect(660, 100, 60, 300);
+                        break;
+                    case 'CAM11':
+                        ctx.fillRect(0, 300, 800, 300);
+                        ctx.fillStyle = '#ff0000';
+                        ctx.fillRect(200, 350, 80, 80);
+                        ctx.fillStyle = '#00ff00';
+                        ctx.fillRect(350, 320, 100, 100);
+                        ctx.fillStyle = '#654321';
+                        ctx.fillRect(320, 150, 160, 100);
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '16px Courier New';
+                        ctx.fillText('MUSIC BOX: ' + Math.floor(gameState.musicBox) + '%', 330, 210);
+                        break;
+                    case 'VENT_L':
+                    case 'VENT_R':
+                        ctx.fillStyle = '#151520';
+                        ctx.fillRect(0, 0, 800, 600);
+                        ctx.fillStyle = '#222235';
+                        for (let i = 0; i < 10; i++) {
+                            ctx.fillRect(0, i*60, 800, 30);
+                        }
+                        break;
+                    default:
+                        ctx.fillRect(200, 400, 400, 200);
+                        ctx.fillStyle = '#0f0f20';
+                        ctx.fillRect(300, 150, 200, 280);
+                }
+                
+                animatronics.forEach((anim, idx) => {
+                    const xPos = 250 + idx * 150;
+                    if (Sprites[anim]) {
+                        Sprites[anim](xPos, 380, 0.8);
+                    }
+                });
+                
+                // Показываем Springtrap на камере
+                if (gameState.springtrapNearby && gameState.springtrapWarningShown) {
+                    if (gameState.springtrapLocation === camId) {
+                        Sprites.springtrap(400, 350, 0.9);
+                        if (Math.random() > 0.5) {
+                            ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                            ctx.fillRect(0, 0, 800, 600);
+                        }
+                    }
+                }
+                
+                ctx.fillStyle = '#0f0';
+                ctx.font = '20px Courier New';
+                ctx.fillText(camId, 20, 30);
+                
+                drawPixelRect(ctx, 750, 15, 10, 10, '#f00');
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px Courier New';
+                ctx.fillText('REC', 720, 45);
+            }
+        };
+
+        // ============ GAME STATE ============
+        let gameState = {};
+        let gameLoopId = null;
+        let lastTime = 0;
+        
+        const NIGHT_DURATION = 240000; // 4 минуты
+        const HOUR_DURATION = NIGHT_DURATION / 6;
+
+        const AI_LEVELS = {
+            1: { toyFreddy: 0, toyBonnie: 2, toyChica: 0, mangle: 0, balloonBoy: 0, puppet: 0, 
+                 witheredFreddy: 0, witheredBonnie: 0, witheredChica: 0, witheredFoxy: 0 },
+            2: { toyFreddy: 0, toyBonnie: 4, toyChica: 2, mangle: 2, balloonBoy: 2, puppet: 4,
+                 witheredFreddy: 0, witheredBonnie: 0, witheredChica: 0, witheredFoxy: 2 },
+            3: { toyFreddy: 2, toyBonnie: 6, toyChica: 4, mangle: 4, balloonBoy: 4, puppet: 6,
+                 witheredFreddy: 2, witheredBonnie: 3, witheredChica: 2, witheredFoxy: 4 },
+            4: { toyFreddy: 4, toyBonnie: 8, toyChica: 6, mangle: 6, balloonBoy: 5, puppet: 8,
+                 witheredFreddy: 4, witheredBonnie: 5, witheredChica: 4, witheredFoxy: 6 },
+            5: { toyFreddy: 6, toyBonnie: 10, toyChica: 8, mangle: 7, balloonBoy: 7, puppet: 12,
+                 witheredFreddy: 6, witheredBonnie: 7, witheredChica: 6, witheredFoxy: 8 },
+            6: { toyFreddy: 10, toyBonnie: 12, toyChica: 12, mangle: 10, balloonBoy: 10, puppet: 15,
+                 witheredFreddy: 10, witheredBonnie: 12, witheredChica: 10, witheredFoxy: 12,
+                 springtrap: 12 }
+        };
+
+        const CAMERA_PATHS = {
+            toyFreddy: ['CAM01', 'CAM02', 'CAM07', 'CAM08', 'HALLWAY', 'OFFICE'],
+            toyBonnie: ['CAM01', 'CAM04', 'CAM02', 'VENT_L', 'OFFICE'],
+            toyChica: ['CAM01', 'CAM02', 'CAM07', 'VENT_R', 'OFFICE'],
+            mangle: ['CAM04', 'CAM05', 'CAM02', 'VENT_R', 'OFFICE'],
+            balloonBoy: ['CAM03', 'CAM04', 'VENT_L', 'OFFICE'],
+            puppet: ['CAM11', 'HALLWAY', 'OFFICE'],
+            witheredFreddy: ['CAM08', 'CAM07', 'CAM02', 'HALLWAY', 'OFFICE'],
+            witheredBonnie: ['CAM08', 'CAM04', 'CAM02', 'HALLWAY', 'OFFICE'],
+            witheredChica: ['CAM08', 'CAM07', 'CAM06', 'HALLWAY', 'OFFICE'],
+            witheredFoxy: ['CAM08', 'HALLWAY', 'OFFICE'],
+            springtrap: ['RANDOM']
+        };
+
+        // ============ GAME FUNCTIONS ============
+        function initGame(night) {
+            gameState = {
+                night: night,
+                hour: 0,
+                timeProgress: 0,
+                battery: 100,
+                musicBox: 100,
+                
+                usingCamera: false,
+                usingMask: false,
+                usingFlashlight: false,
+                hidingUnderDesk: false,
+                currentCamera: 'CAM01',
+                
+                animatronics: JSON.parse(JSON.stringify(AI_LEVELS[night])),
+                animatronicPositions: {},
+                animatronicTimers: {},
+                animatronicCooldowns: {},
+                animatronicAtDoor: {},
+                
+                foxyFlashlightTime: 0,
+                foxyInHallway: false,
+                
+                springtrapNearby: false,
+                springtrapLocation: null,
+                springtrapAttackTimer: 0,
+                springtrapWarningShown: false,
+                
+                gameOver: false,
+                nightComplete: false,
+                jumpscareActive: false,
+                puppetAttacking: false,
+                
+                flashlightBattery: 100,
+                attackTimers: {}
+            };
+            
+            Object.keys(gameState.animatronics).forEach(anim => {
+                if (gameState.animatronics[anim] > 0 && anim !== 'springtrap') {
+                    gameState.animatronicPositions[anim] = 0;
+                    gameState.animatronicTimers[anim] = 0;
+                    gameState.animatronicCooldowns[anim] = 0;
+                    gameState.animatronicAtDoor[anim] = false;
+                    gameState.attackTimers[anim] = 0;
+                }
+            });
+            
+            document.getElementById('cameraBtn').classList.remove('active');
+            document.getElementById('maskBtn').classList.remove('active');
+            document.getElementById('flashlightBtn').classList.remove('active');
+            document.getElementById('hideBtn').classList.remove('active');
+            document.getElementById('cameraPanel').style.display = 'none';
+            document.getElementById('windMusicBox').style.display = 'none';
+            document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
+            
+            jumpscareCanvas.style.display = 'none';
+            document.getElementById('gameContainer').classList.remove('shake');
+        }
+
+        function startNight(night) {
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('nightComplete').style.display = 'none';
+            
+            initGame(night);
+            lastTime = performance.now();
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        function returnToMenu() {
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            
+            document.getElementById('menu').style.display = 'flex';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('nightComplete').style.display = 'none';
+            
+            ctx.clearRect(0, 0, 800, 600);
+        }
+
+        function updateUI() {
+            const hours = gameState.hour === 0 ? '12' : gameState.hour.toString();
+            document.getElementById('time').textContent = `${hours} AM`;
+            document.getElementById('night').textContent = `Night ${gameState.night}`;
+            document.getElementById('power').textContent = `Battery: ${Math.floor(gameState.battery)}%`;
+            document.getElementById('flashlightPower').textContent = `Flashlight: ${Math.floor(gameState.flashlightBattery)}%`;
+            
+            const musicBoxFill = document.getElementById('musicBoxFill');
+            musicBoxFill.style.width = gameState.musicBox + '%';
+            
+            if (gameState.musicBox < 20) {
+                musicBoxFill.style.background = '#f00';
+                document.getElementById('musicBox').classList.add('warning');
+            } else if (gameState.musicBox < 50) {
+                musicBoxFill.style.background = '#ff0';
+                document.getElementById('musicBox').classList.remove('warning');
+            } else {
+                musicBoxFill.style.background = '#0f0';
+                document.getElementById('musicBox').classList.remove('warning');
+            }
+            
+            document.getElementById('windMusicBox').style.display = gameState.usingCamera ? 'block' : 'none';
+            document.getElementById('hideBtn').style.display = (gameState.night === 6) ? 'block' : 'none';
+            
+            // Блокировка кнопок
+            const cameraBtn = document.getElementById('cameraBtn');
+            const maskBtn = document.getElementById('maskBtn');
+            const flashlightBtn = document.getElementById('flashlightBtn');
+            const hideBtn = document.getElementById('hideBtn');
+            const windBtn = document.getElementById('windMusicBox');
+
+            cameraBtn.classList.toggle('disabled', gameState.hidingUnderDesk || gameState.usingMask);
+            maskBtn.classList.toggle('disabled', gameState.hidingUnderDesk || gameState.usingCamera);
+            flashlightBtn.classList.toggle('disabled', gameState.hidingUnderDesk || gameState.usingMask || gameState.usingCamera);
+            hideBtn.classList.toggle('disabled', gameState.usingMask || gameState.usingCamera);
+            windBtn.classList.toggle('disabled', gameState.hidingUnderDesk || gameState.usingMask);
+        }
+
+        function windMusicBox() {
+            if (gameState.hidingUnderDesk || gameState.usingMask) return;
+            
+            if (gameState.usingCamera) {
+                playButtonSound();
+                gameState.musicBox = Math.min(100, gameState.musicBox + 2);
+                document.getElementById('windMusicBox').classList.add('winding');
+                setTimeout(() => {
+                    document.getElementById('windMusicBox').classList.remove('winding');
+                }, 100);
+            }
+        }
+
+        function handleSpringtrap(deltaTime) {
+            if (!gameState.animatronics.springtrap || gameState.animatronics.springtrap <= 0) return;
+            if (gameState.night !== 6) return;
+            
+            if (!gameState.springtrapNearby) {
+                if (Math.random() < 0.00005 * gameState.animatronics.springtrap) {
+                    const locations = ['HALLWAY', 'VENT_L', 'VENT_R'];
+                    gameState.springtrapLocation = locations[Math.floor(Math.random() * locations.length)];
+                    gameState.springtrapNearby = true;
+                    gameState.springtrapAttackTimer = 0;
+                    gameState.springtrapWarningShown = false;
+                }
+                return;
+            }
+            
+            gameState.springtrapAttackTimer += deltaTime;
+            
+            if (gameState.springtrapAttackTimer < 2000) {
+                gameState.springtrapWarningShown = true;
+                return;
+            }
+            
+            if (gameState.hidingUnderDesk) {
+                if (gameState.springtrapAttackTimer > 5000 + Math.random() * 2000) {
+                    gameState.springtrapNearby = false;
+                    gameState.springtrapAttackTimer = 0;
+                    gameState.springtrapLocation = null;
+                    gameState.springtrapWarningShown = false;
+                }
+            } else {
+                if (gameState.springtrapAttackTimer > 5000 + Math.random() * 2000) {
+                    triggerJumpscare('springtrap');
+                }
+            }
+        }
+
+        function moveAnimatronics(deltaTime) {
+            Object.keys(gameState.animatronicPositions).forEach(anim => {
+                if (gameState.animatronics[anim] <= 0) return;
+                
+                const path = CAMERA_PATHS[anim];
+                if (!path || path[0] === 'RANDOM') return;
+                
+                if (gameState.animatronicCooldowns[anim] > 0) {
+                    gameState.animatronicCooldowns[anim] -= deltaTime;
+                    return;
+                }
+                
+                let currentPos = gameState.animatronicPositions[anim];
+                const currentLocation = path[currentPos];
+                const isAtVent = currentLocation && currentLocation.includes('VENT');
+                const isAtHallway = currentLocation === 'HALLWAY';
+                const isNearOffice = isAtVent || isAtHallway;
+                
+                gameState.animatronicAtDoor[anim] = isNearOffice;
+                gameState.animatronicTimers[anim] = (gameState.animatronicTimers[anim] || 0) + deltaTime;
+                
+                // Вентиляция
+                if (isAtVent) {
+                    gameState.attackTimers[anim] = (gameState.attackTimers[anim] || 0) + deltaTime;
+                    
+                    if (gameState.usingMask && !gameState.hidingUnderDesk) {
+                        if (gameState.attackTimers[anim] > 1500 + Math.random() * 1500) {
+                            gameState.animatronicPositions[anim] = Math.max(0, currentPos - 2);
+                            gameState.animatronicTimers[anim] = 0;
+                            gameState.attackTimers[anim] = 0;
+                            gameState.animatronicCooldowns[anim] = 5000 + Math.random() * 3000;
+                            gameState.animatronicAtDoor[anim] = false;
+                            return;
+                        }
+                    } else if (!gameState.hidingUnderDesk) {
+                        if (gameState.attackTimers[anim] > 2000 + Math.random() * 2000) {
+                            triggerJumpscare(anim);
+                            return;
+                        }
+                    }
+                    return;
+                }
+                
+                // Коридор
+                if (isAtHallway) {
+                    gameState.attackTimers[anim] = (gameState.attackTimers[anim] || 0) + deltaTime;
+                    
+                    // Foxy - только фонарик
+                    if (anim === 'witheredFoxy') {
+                        gameState.foxyInHallway = true;
+                        
+                        if (gameState.usingFlashlight && !gameState.usingCamera && !gameState.hidingUnderDesk && !gameState.usingMask) {
+                            gameState.foxyFlashlightTime += deltaTime / 1000;
+                            
+                            if (gameState.foxyFlashlightTime >= 4) {
+                                gameState.animatronicPositions[anim] = 0;
+                                gameState.animatronicTimers[anim] = 0;
+                                gameState.foxyFlashlightTime = 0;
+                                gameState.foxyInHallway = false;
+                                gameState.animatronicCooldowns[anim] = 8000 + Math.random() * 4000;
+                                gameState.animatronicAtDoor[anim] = false;
+                                return;
+                            }
+                        } else if (!gameState.hidingUnderDesk) {
+                            if (gameState.attackTimers[anim] > 3000 + Math.random() * 2000) {
+                                triggerJumpscare(anim);
+                                return;
+                            }
+                        }
+                        return;
+                    }
+                    
+                    // Остальные в коридоре
+                    if (gameState.usingFlashlight && !gameState.usingCamera && !gameState.hidingUnderDesk && !gameState.usingMask) {
+                        if (gameState.attackTimers[anim] > 1000) {
+                            gameState.animatronicPositions[anim] = Math.max(0, currentPos - 1);
+                            gameState.animatronicTimers[anim] = 0;
+                            gameState.attackTimers[anim] = 0;
+                            gameState.animatronicCooldowns[anim] = 4000 + Math.random() * 3000;
+                            gameState.animatronicAtDoor[anim] = false;
+                            return;
+                        }
+                    } else if (!gameState.hidingUnderDesk) {
+                        if (gameState.attackTimers[anim] > 2500 + Math.random() * 2000) {
+                            if (!gameState.usingMask) {
+                                triggerJumpscare(anim);
+                                return;
+                            }
+                        }
+                    }
+                    return;
+                }
+                
+                // Puppet
+                if (anim === 'puppet') {
+                    if (gameState.musicBox < 30 && Math.random() < 0.005) {
+                        currentPos = Math.min(currentPos + 1, path.length - 1);
+                        gameState.animatronicPositions[anim] = currentPos;
+                    }
+                    return;
+                }
+                
+                // Обычное движение
+                const moveInterval = 3000 + (20 - gameState.animatronics[anim]) * 300;
+                
+                if (gameState.animatronicTimers[anim] > moveInterval) {
+                    const moveChance = gameState.animatronics[anim] / 18;
+                    
+                    if (Math.random() < moveChance) {
+                        if (currentPos < path.length - 1) {
+                            gameState.animatronicPositions[anim] = currentPos + 1;
+                            gameState.attackTimers[anim] = 0;
+                        }
+                    }
+                    gameState.animatronicTimers[anim] = 0;
+                }
+            });
+        }
+
+        function triggerJumpscare(animatronic) {
+            if (gameState.gameOver) return;
+            
+            playJumpscareSound();
+            
+            gameState.jumpscareActive = true;
+            gameState.gameOver = true;
+            
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            
+            jumpscareCanvas.style.display = 'block';
+            document.getElementById('gameContainer').classList.add('shake');
+            
+            jumpscareCtx.fillStyle = '#000';
+            jumpscareCtx.fillRect(0, 0, 800, 600);
+            
+            if (JumpscareSprites[animatronic]) {
+                JumpscareSprites[animatronic](jumpscareCtx, 400, 350, 2);
+            } else {
+                JumpscareSprites.toyFreddy(jumpscareCtx, 400, 350, 2);
+            }
+            
+            jumpscareCtx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+            for (let i = 0; i < 300; i++) {
+                jumpscareCtx.fillRect(
+                    Math.random() * 800,
+                    Math.random() * 600,
+                    Math.random() * 30,
+                    Math.random() * 5
+                );
+            }
+            
+            setTimeout(() => {
+                document.getElementById('gameContainer').classList.remove('shake');
+                jumpscareCanvas.style.display = 'none';
+                document.getElementById('gameOver').style.display = 'flex';
+            }, 1500);
+        }
+
+        function drawStatic() {
+            staticCtx.clearRect(0, 0, 800, 600);
+            
+            const intensity = gameState.usingCamera ? 0.15 : 0.05;
+            
+            for (let i = 0; i < 1000 * intensity; i++) {
+                const gray = Math.floor(Math.random() * 255);
+                staticCtx.fillStyle = `rgba(${gray}, ${gray}, ${gray}, ${Math.random() * 0.3})`;
+                staticCtx.fillRect(
+                    Math.random() * 800,
+                    Math.random() * 600,
+                    Math.random() * 4 + 1,
+                    Math.random() * 2 + 1
+                );
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, 800, 600);
+            
+            if (gameState.usingCamera) {
+                const animsInCamera = [];
+                Object.keys(gameState.animatronicPositions).forEach(anim => {
+                    const path = CAMERA_PATHS[anim];
+                    if (!path) return;
+                    const location = path[gameState.animatronicPositions[anim]];
+                    if (location === gameState.currentCamera) {
+                        animsInCamera.push(anim);
+                    }
+                });
+                
+                Sprites.cameraRoom(gameState.currentCamera, animsInCamera);
+                
+            } else if (gameState.hidingUnderDesk) {
+                // Вид из-под стола
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+                ctx.fillRect(0, 0, 800, 600);
+                
+                ctx.fillStyle = 'rgba(50, 50, 70, 0.4)';
+                ctx.fillRect(0, 50, 800, 80);
+                
+                ctx.fillStyle = '#555';
+                ctx.font = '20px Courier New';
+                ctx.fillText('Прячемся под столом...', 280, 300);
+                
+                if (gameState.springtrapNearby && gameState.springtrapAttackTimer > 2000) {
+                    ctx.fillStyle = COLORS.olive;
+                    ctx.fillRect(350, 60, 25, 50);
+                    ctx.fillRect(425, 60, 25, 50);
+                }
+            } else {
+                Sprites.office();
+                
+                if (gameState.usingFlashlight && gameState.flashlightBattery > 0) {
+                    ctx.fillStyle = 'rgba(255, 255, 200, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(400, 450);
+                    ctx.lineTo(250, 100);
+                    ctx.lineTo(550, 100);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    Object.keys(gameState.animatronicPositions).forEach(anim => {
+                        const path = CAMERA_PATHS[anim];
+                        if (!path) return;
+                        const location = path[gameState.animatronicPositions[anim]];
+                        
+                        if (location === 'HALLWAY') {
+                            if (Sprites[anim]) {
+                                Sprites[anim](400, 250, 0.7);
+                            }
+                        }
+                    });
+                }
+                
+                if (gameState.usingMask) {
+                    ctx.fillStyle = 'rgba(139, 69, 19, 0.7)';
+                    ctx.fillRect(0, 0, 800, 600);
+                    
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 280, 80, 100, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(500, 280, 80, 100, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(400, 400, 40, 30, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                Object.keys(gameState.animatronicPositions).forEach(anim => {
+                    const path = CAMERA_PATHS[anim];
+                    if (!path) return;
+                    const location = path[gameState.animatronicPositions[anim]];
+                    
+                    if (location === 'VENT_L') {
+                        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                        ctx.fillRect(0, 200, 80, 100);
+                        if (!gameState.usingMask) {
+                            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                            ctx.fillRect(20, 220, 40, 60);
+                        }
+                    }
+                    if (location === 'VENT_R') {
+                        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                        ctx.fillRect(720, 200, 80, 100);
+                        if (!gameState.usingMask) {
+                            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                            ctx.fillRect(740, 220, 40, 60);
+                        }
+                    }
+                });
+                
+                if (!gameState.usingFlashlight) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                    ctx.fillRect(250, 50, 300, 250);
+                }
+            }
+            
+            drawStatic();
+        }
+
+        // ============ GAME LOOP ============
+        function gameLoop(currentTime) {
+            if (gameState.gameOver || gameState.nightComplete) return;
+            
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+            
+            const safeDelta = Math.min(deltaTime, 100);
+            
+            gameState.timeProgress += safeDelta;
+            if (gameState.timeProgress >= HOUR_DURATION) {
+                gameState.timeProgress = 0;
+                gameState.hour++;
+                
+                if (gameState.hour >= 6) {
+                    gameState.nightComplete = true;
+                    document.getElementById('completedNightText').textContent = `Night ${gameState.night} completed!`;
+                    document.getElementById('nightComplete').style.display = 'flex';
+                    return;
+                }
+            }
+            
+            // Трата ресурсов
+            if (gameState.usingCamera) {
+                gameState.battery -= safeDelta * 0.0008;
+            }
+            if (gameState.usingFlashlight && gameState.flashlightBattery > 0) {
+                gameState.flashlightBattery -= safeDelta * 0.001;
+                gameState.battery -= safeDelta * 0.0005;
+            }
+            if (gameState.usingMask) {
+                gameState.battery -= safeDelta * 0.0003;
+            }
+            if (gameState.hidingUnderDesk) {
+                gameState.battery -= safeDelta * 0.0006;
+            }
+            
+            // Music box - быстрее в 1.75 раза
+            gameState.musicBox -= safeDelta * 0.000875;
+            
+            if (gameState.musicBox <= 0 && !gameState.puppetAttacking) {
+                gameState.puppetAttacking = true;
+                setTimeout(() => {
+                    if (!gameState.gameOver && !gameState.nightComplete && !gameState.usingMask && !gameState.hidingUnderDesk) {
+                        triggerJumpscare('puppet');
+                    }
+                }, 5000);
+            }
+            
+            moveAnimatronics(safeDelta);
+            handleSpringtrap(safeDelta);
+            
+            gameState.battery = Math.max(0, Math.min(100, gameState.battery));
+            gameState.musicBox = Math.max(0, Math.min(100, gameState.musicBox));
+            gameState.flashlightBattery = Math.max(0, Math.min(100, gameState.flashlightBattery));
+            
+            if (gameState.flashlightBattery <= 0) {
+                gameState.usingFlashlight = false;
+                document.getElementById('flashlightBtn').classList.remove('active');
+            }
+            
+            if (gameState.battery <= 0) {
+                const activeAnims = Object.keys(gameState.animatronicPositions);
+                if (activeAnims.length > 0) {
+                    triggerJumpscare(activeAnims[Math.floor(Math.random() * activeAnims.length)]);
+                    return;
+                }
+            }
+            
+            render();
+            updateUI();
+            
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        // ============ EVENT LISTENERS ============
+        document.getElementById('cameraBtn').addEventListener('click', () => {
+            if (gameState.hidingUnderDesk || gameState.usingMask) return;
+            
+            playButtonSound();
+            gameState.usingCamera = !gameState.usingCamera;
+            
+            document.getElementById('cameraBtn').classList.toggle('active', gameState.usingCamera);
+            document.getElementById('cameraPanel').style.display = gameState.usingCamera ? 'flex' : 'none';
+        });
+
+        document.getElementById('maskBtn').addEventListener('click', () => {
+            if (gameState.hidingUnderDesk || gameState.usingCamera) return;
+            
+            playButtonSound();
+            gameState.usingMask = !gameState.usingMask;
+            
+            if (gameState.usingMask) {
+                gameState.usingFlashlight = false;
+                document.getElementById('flashlightBtn').classList.remove('active');
+            }
+            
+            document.getElementById('maskBtn').classList.toggle('active', gameState.usingMask);
+        });
+
+        document.getElementById('flashlightBtn').addEventListener('click', () => {
+            if (gameState.hidingUnderDesk || gameState.usingMask || gameState.usingCamera) return;
+            
+            if (gameState.flashlightBattery > 0) {
+                playButtonSound();
+                gameState.usingFlashlight = !gameState.usingFlashlight;
+                document.getElementById('flashlightBtn').classList.toggle('active', gameState.usingFlashlight);
+            }
+        });
+
+        document.getElementById('hideBtn').addEventListener('click', () => {
+            if (gameState.usingMask || gameState.usingCamera) return;
+            if (gameState.night !== 6) return;
+            
+            playButtonSound();
+            gameState.hidingUnderDesk = !gameState.hidingUnderDesk;
+            
+            if (gameState.hidingUnderDesk) {
+                gameState.usingFlashlight = false;
+                document.getElementById('flashlightBtn').classList.remove('active');
+            }
+            
+            document.getElementById('hideBtn').classList.toggle('active', gameState.hidingUnderDesk);
+        });
+
+        document.getElementById('windMusicBox').addEventListener('click', windMusicBox);
+        
+        let windInterval = null;
+        document.getElementById('windMusicBox').addEventListener('mousedown', () => {
+            if (gameState.hidingUnderDesk || gameState.usingMask) return;
+            windMusicBox();
+            windInterval = setInterval(windMusicBox, 100);
+        });
+        document.getElementById('windMusicBox').addEventListener('mouseup', () => {
+            if (windInterval) { clearInterval(windInterval); windInterval = null; }
+        });
+        document.getElementById('windMusicBox').addEventListener('mouseleave', () => {
+            if (windInterval) { clearInterval(windInterval); windInterval = null; }
+        });
+        
+        document.getElementById('windMusicBox').addEventListener('touchstart', (e) => {
+            if (gameState.hidingUnderDesk || gameState.usingMask) return;
+            e.preventDefault();
+            windMusicBox();
+            windInterval = setInterval(windMusicBox, 100);
+        });
+        document.getElementById('windMusicBox').addEventListener('touchend', () => {
+            if (windInterval) { clearInterval(windInterval); windInterval = null; }
+        });
+
+        document.querySelectorAll('.cam-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const cam = e.target.dataset.cam;
+                gameState.currentCamera = cam;
+                document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                playButtonSound();
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (gameState.gameOver || gameState.nightComplete) return;
+            
+            switch(e.key.toLowerCase()) {
+                case 'c':
+                    if (!gameState.hidingUnderDesk && !gameState.usingMask) {
+                        document.getElementById('cameraBtn').click();
+                    }
+                    break;
+                case 'm':
+                    if (!gameState.hidingUnderDesk && !gameState.usingCamera) {
+                        document.getElementById('maskBtn').click();
+                    }
+                    break;
+                case 'f':
+                    if (!gameState.hidingUnderDesk && !gameState.usingMask && !gameState.usingCamera) {
+                        document.getElementById('flashlightBtn').click();
+                    }
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    if (!gameState.hidingUnderDesk && !gameState.usingMask) {
+                        windMusicBox();
+                    }
+                    break;
+                case 'h':
+                    if (gameState.night === 6 && !gameState.usingMask && !gameState.usingCamera) {
+                        document.getElementById('hideBtn').click();
+                    }
+                    break;
+            }
+        });
+        
+        let spaceHeld = false;
+        let spaceInterval = null;
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' && !spaceHeld && gameState.usingCamera && !gameState.hidingUnderDesk) {
+                spaceHeld = true;
+                spaceInterval = setInterval(windMusicBox, 100);
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.key === ' ') {
+                spaceHeld = false;
+                if (spaceInterval) { clearInterval(spaceInterval); spaceInterval = null; }
+            }
+        });
+
+        function handleResize() {
+            const container = document.getElementById('gameContainer');
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            
+            let width = windowWidth;
+            let height = width * 0.75;
+            
+            if (height > windowHeight) {
+                height = windowHeight;
+                width = height / 0.75;
+            }
+            
+            container.style.width = Math.min(width, 800) + 'px';
+            container.style.height = Math.min(height, 600) + 'px';
+        }
+        
+        window.addEventListener('resize', handleResize);
+        handleResize();
+
+        function animateStatic() {
+            if (!gameState.gameOver && !gameState.nightComplete) {
+                drawStatic();
+            }
+            requestAnimationFrame(animateStatic);
+        }
+        animateStatic();
+
+        console.log('FNAF 2 Pixel Edition loaded!');
+    </script>
+</body>
+</html>
